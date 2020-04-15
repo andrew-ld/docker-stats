@@ -17,8 +17,7 @@ def _calculate_cpu_percent(d):
     cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - \
                 float(d["precpu_stats"]["cpu_usage"]["total_usage"])
 
-    system_delta = float(d["cpu_stats"]["system_cpu_usage"]) - \
-                   float(d["precpu_stats"]["system_cpu_usage"])
+    system_delta = float(d["cpu_stats"]["system_cpu_usage"])
 
     if system_delta > 0.0:
         cpu_percent = cpu_delta / system_delta * 100.0 * d["cpu_stats"]["online_cpus"]
