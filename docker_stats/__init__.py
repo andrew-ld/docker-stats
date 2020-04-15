@@ -90,5 +90,5 @@ class VoipLockerStatsBot:
 
 
 __all__ = [
-    VoipLockerStatsBot
+    DockerStatsBot
 ]

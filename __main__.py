@@ -1,6 +1,6 @@
 import os
 
-from voiplocker_stats import VoipLockerStatsBot
+from docker_stats import DockerStatsBot
 
 
 if __name__ == '__main__':
@@ -9,7 +9,7 @@ if __name__ == '__main__':
     _channel = int(os.environ["VL_CHANNEL"])
     _ticks = int(os.environ["VL_TICKS"])
 
-    _bot = VoipLockerStatsBot(_prefix, _token, _channel)
+    _bot = DockerStatsBot(_prefix, _token, _channel)
 
     while True:
         for _ in range(_ticks):
