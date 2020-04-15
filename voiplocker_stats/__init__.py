@@ -10,26 +10,21 @@ from matplotlib import ticker as mtick
 from matplotlib import dates as mdates
 
 
-# https://github.com/TomasTomecek/sen/blob/02e5872ee2905861e1da06ab5174e1a3f41f0e0b/sen/util.py#L162
-def _calculate_cpu_percent(d):
-    cpu_percent = 0.0
-
+def _calculate_cpu_percent(d: dict) -> float:
     cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - \
                 float(d["precpu_stats"]["cpu_usage"]["total_usage"])
 
-    system_delta = float(d["cpu_stats"]["system_cpu_usage"])
+    if cpu_delta > 0.0:
+        cpu_delta /= 10000000
 
-    if system_delta > 0.0:
-        cpu_percent = cpu_delta / system_delta * 100.0 * d["cpu_stats"]["online_cpus"]
-
-    return int(cpu_percent)
+    return cpu_delta
 
 
 class VoipLockerStatsBot:
     _bot: telegram.Bot
     _channel: int
     _x_data: typing.List[datetime.datetime]
-    _y_data: typing.Dict[str, typing.List[int]]
+    _y_data: typing.Dict[str, typing.List[float]]
     _docker: docker.APIClient
     _containers: typing.Dict[str, typing.Any]
 
@@ -42,7 +37,6 @@ class VoipLockerStatsBot:
         self._containers = {}
 
         for container in self._docker.containers():
-            print(container["Names"])
             if container["State"] == "running":
                 if container["Names"][-1].startswith(prefix):
                     name: str = container["Names"][-1]
