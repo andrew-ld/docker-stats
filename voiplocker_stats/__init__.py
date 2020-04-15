@@ -1,9 +1,11 @@
+import functools
 import io
 
 import docker
 import telegram
 import typing
 import datetime
+import multiprocessing.pool
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mtick
@@ -27,6 +29,7 @@ class VoipLockerStatsBot:
     _y_data: typing.Dict[str, typing.List[float]]
     _docker: docker.APIClient
     _containers: typing.Dict[str, typing.Any]
+    _thread_pool: multiprocessing.pool.ThreadPool
 
     def __init__(self, prefix: str, token: str, channel: int):
         self._channel = channel
@@ -44,6 +47,8 @@ class VoipLockerStatsBot:
                     name = "_".join(name.split("_")[0:-1])
                     self._containers[name] = container["Id"]
 
+        self._thread_pool = multiprocessing.pool.ThreadPool(len(self._containers))
+
         self.graph_reset()
 
     def graph_reset(self):
@@ -53,9 +58,11 @@ class VoipLockerStatsBot:
     def graph_loop_tick(self):
         self._x_data.append(datetime.datetime.now())
 
-        for c_name, c_id in self._containers.items():
-            container = self._docker.stats(c_id, stream=False)
-            self._y_data[c_name].append(_calculate_cpu_percent(container))
+        f = functools.partial(self._docker.stats, stream=False)
+        results = self._thread_pool.map(f, self._containers.values())
+
+        for c_name, stats in zip(self._containers.keys(), results):
+            self._y_data[c_name].append(_calculate_cpu_percent(stats))
 
     def plot(self):
         fig, ax = plt.subplots()
