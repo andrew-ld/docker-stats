@@ -10,6 +10,6 @@ COPY __main__.py .
 
 COPY ./docker_stats /srv/docker_stats/docker_stats
 
-RUN python3 -m compileall .
+RUN python3 -OO -m compileall .
 
 CMD python3 .

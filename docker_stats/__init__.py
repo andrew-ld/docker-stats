@@ -41,10 +41,9 @@ class DockerStatsBot:
 
         for container in self._docker.containers():
             if container["State"] == "running":
-                if container["Names"][-1].startswith(prefix):
-                    name: str = container["Names"][-1]
+                if container["Names"][0].startswith(prefix):
+                    name: str = container["Names"][0]
                     name = name.replace(prefix, "")
-                    name = "_".join(name.split("_")[0:-1])
                     self._containers[name] = container["Id"]
 
         self._thread_pool = multiprocessing.pool.ThreadPool(len(self._containers))
