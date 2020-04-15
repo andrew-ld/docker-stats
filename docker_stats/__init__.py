@@ -22,7 +22,7 @@ def _calculate_cpu_percent(d: dict) -> float:
     return cpu_delta
 
 
-class VoipLockerStatsBot:
+class DockerStatsBot:
     _bot: telegram.Bot
     _channel: int
     _x_data: typing.List[datetime.datetime]
