@@ -86,14 +86,16 @@ class DockerStatsBot:
         fig.autofmt_xdate()
         plt.tight_layout()
 
+        plt.ioff()
         output = io.BytesIO()
         fig.savefig(output, format="png")
         output.seek(0)
 
         self._bot.send_photo(self._channel, output)
 
+        output.close()
         plt.close(fig)
-        plt.close()
+        plt.close("all")
 
 
 __all__ = [
