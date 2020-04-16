@@ -87,7 +87,7 @@ class DockerStatsBot:
         plt.tight_layout()
 
         output = io.BytesIO()
-        plt.savefig(output, format="png")
+        fig.savefig(output, format="png")
         output.seek(0)
 
         self._bot.send_photo(self._channel, output)
