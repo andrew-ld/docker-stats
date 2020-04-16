@@ -17,6 +17,7 @@ def _calculate_cpu_percent(d: dict) -> float:
                 float(d["precpu_stats"]["cpu_usage"]["total_usage"])
 
     if cpu_delta > 0.0:
+        cpu_delta /= float(d["cpu_stats"]["online_cpus"])
         cpu_delta /= 10000000
 
     return cpu_delta
@@ -72,7 +73,8 @@ class DockerStatsBot:
             lines.append(p)
 
         ax.get_yaxis().set_major_formatter(mtick.PercentFormatter(decimals=0))
-        ax.legend(lines, [l.get_label() for l in lines], bbox_to_anchor=(0.96, 0.96))
+        ax.legend(lines, [l.get_label() for l in lines], bbox_to_anchor=(1.04,1), loc="upper left")
+        plt.subplots_adjust(right=0.7)
         ax.set_ylim([-2, 102])
         ax.grid(True)
 
