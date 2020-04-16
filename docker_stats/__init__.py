@@ -12,15 +12,19 @@ from matplotlib import ticker as mtick
 from matplotlib import dates as mdates
 
 
-def _calculate_cpu_percent(d: dict) -> float:
-    cpu_delta = float(d["cpu_stats"]["cpu_usage"]["total_usage"]) - \
-                float(d["precpu_stats"]["cpu_usage"]["total_usage"])
+def _calculate_cpu_percent(d: dict) -> list:
+    cpu_deltas = []
+    cpu_usage_list = d["cpu_stats"]["cpu_usage"]["percpu_usage"]
+    percpu_usage_list = d["precpu_stats"]["cpu_usage"]["percpu_usage"]
+    for cpu_usage, precpu_usage in zip(cpu_usage_list, percpu_usage_list):
+        cpu_delta = float(cpu_usage) - float(precpu_usage)
 
-    if cpu_delta > 0.0:
-        cpu_delta /= float(d["cpu_stats"]["online_cpus"])
-        cpu_delta /= 10000000.0
-
-    return cpu_delta
+        if cpu_delta > 0.0:
+            cpu_delta /= 10000000.0
+        
+        cpu_deltas.append(cpu_delta)
+    
+    return cpu_deltas
 
 
 class DockerStatsBot:
@@ -65,15 +69,20 @@ class DockerStatsBot:
     def plot(self):
         fig = plt.figure()
         fig.set_size_inches(11, 7)
-        ax = fig.add_subplot(adjustable="box")
+        axs = fig.subplots(2, 3) #, adjustable="box"
         lines = []
+        
+        ax = axs[0, 0]
 
         for label, values in self._y_data.items():
-            p, = ax.plot(self._x_data, values, label=label)
+            tmp_val = []
+            for value in values:
+                tmp_val.append(value[0])
+            p, = ax.plot(self._x_data, tmp_val, label=label)
             lines.append(p)
 
         ax.get_yaxis().set_major_formatter(mtick.PercentFormatter(decimals=0))
-        ax.legend(lines, [l.get_label() for l in lines], bbox_to_anchor=(1.04, 1), loc="upper left")
+        fig.legend(lines, [l.get_label() for l in lines], loc="upper right") # , bbox_to_anchor=(1.04, 1)
         plt.gcf().axes[0].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
 
         ax.grid(True)
