@@ -18,7 +18,7 @@ def _calculate_cpu_percent(d: dict) -> float:
 
     if cpu_delta > 0.0:
         cpu_delta /= float(d["cpu_stats"]["online_cpus"])
-        cpu_delta /= 10000000
+        cpu_delta /= 10000000.0
 
     return cpu_delta
 
@@ -32,7 +32,7 @@ class DockerStatsBot:
     _containers: typing.Dict[str, typing.Any]
     _thread_pool: multiprocessing.pool.ThreadPool
 
-    def __init__(self, prefix: str, token: str, channel: int):
+    def __init__(self, token: str, channel: int):
         self._channel = channel
 
         self._bot = telegram.Bot(token=token)
@@ -42,10 +42,8 @@ class DockerStatsBot:
 
         for container in self._docker.containers():
             if container["State"] == "running":
-                if container["Names"][0].startswith(prefix):
-                    name: str = container["Names"][0]
-                    name = name.replace(prefix, "")
-                    self._containers[name] = container["Id"]
+                name = container["Names"][0]
+                self._containers[name] = container["Id"]
 
         self._thread_pool = multiprocessing.pool.ThreadPool(len(self._containers))
 
@@ -65,7 +63,9 @@ class DockerStatsBot:
             self._y_data[c_name].append(_calculate_cpu_percent(stats))
 
     def plot(self):
-        fig, ax = plt.subplots()
+        fig = plt.figure()
+        fig.set_size_inches(11, 7)
+        ax = fig.add_subplot(adjustable="box")
         lines = []
 
         for label, values in self._y_data.items():
@@ -73,15 +73,18 @@ class DockerStatsBot:
             lines.append(p)
 
         ax.get_yaxis().set_major_formatter(mtick.PercentFormatter(decimals=0))
-        ax.legend(lines, [l.get_label() for l in lines], bbox_to_anchor=(1.04,1), loc="upper left")
-        plt.subplots_adjust(right=0.7)
-        ax.set_ylim([-2, 102])
-        ax.grid(True)
-
+        ax.legend(lines, [l.get_label() for l in lines], bbox_to_anchor=(1.04, 1), loc="upper left")
         plt.gcf().axes[0].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+
+        ax.grid(True)
         plt.xticks(rotation=45)
-        plt.tight_layout()
+
+        ax.set_ylim([-2, 102])
+        ax.set_xlim([min(self._x_data), max(self._x_data)])
+
+        plt.subplots_adjust(left=0)
         fig.autofmt_xdate()
+        plt.tight_layout()
 
         output = io.BytesIO()
         plt.savefig(output, format="png")
@@ -89,7 +92,10 @@ class DockerStatsBot:
 
         self._bot.send_photo(self._channel, output)
 
+        plt.close(fig)
+        plt.close()
+
 
 __all__ = [
-    DockerStatsBot
+    "DockerStatsBot"
 ]
