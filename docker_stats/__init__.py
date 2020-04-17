@@ -125,7 +125,7 @@ class DockerStatsBot:
         axs[0][-1].legend(self._y_data.keys(), bbox_to_anchor=(1.05, 1.05), loc="upper left")
 
         output = io.BytesIO()
-        plt.show()
+        plt.savefig(output, format="png")
         output.seek(0)
 
         self._bot.send_photo(self._channel, output)
