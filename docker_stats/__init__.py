@@ -2,12 +2,10 @@ import functools
 import io
 import itertools
 import docker
-import numpy
 import telegram
 import typing
 import datetime
 import multiprocessing.pool
-import sys
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mtick
