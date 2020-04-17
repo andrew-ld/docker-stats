@@ -50,9 +50,10 @@ class DockerStatsBot:
 
         self._bot = telegram.Bot(token=token)
         self._docker = docker.APIClient()
-        self._containers = {}
 
     def load_containers(self):
+        self._containers = {}
+
         while True:
             for c in self._docker.containers():
                 if c["State"] == "running":
@@ -81,7 +82,6 @@ class DockerStatsBot:
 
     def graph_reset(self):
         self._x_data = []
-        self._containers = {}
         self._y_data = dict((n, []) for n in self._containers.keys())
 
     def graph_loop_tick(self):
