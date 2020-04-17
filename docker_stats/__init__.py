@@ -96,7 +96,7 @@ class DockerStatsBot:
     def plot(self):
         fig: Figure = plt.figure()
         fig.set_size_inches(19, 12)
-        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.80, left=0.05, bottom=0.05)
+        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.90, left=0.05, bottom=0.05)
 
         cores = multiprocessing.cpu_count()
 
