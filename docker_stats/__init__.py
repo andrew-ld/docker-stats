@@ -84,8 +84,11 @@ class DockerStatsBot:
         axs = fig.subplots(rows, lines)
 
         for core, ax in enumerate(itertools.chain.from_iterable(axs)):
+            max_cpu = 0
+
             for label, values in self._y_data.items():
                 core_values = [v[core] for v in values]
+                max_cpu = max(max_cpu, max(core_values))
 
                 if sum(core_values) / len(core_values) >= 0.1:
                     ax.plot(self._x_data, core_values, label=label)
@@ -93,7 +96,7 @@ class DockerStatsBot:
                 else:
                     ax.plot(self._x_data, [-sys.maxsize] * len(core_values), label=label)
 
-            ax.set_ylim([-5, 105])
+            ax.set_ylim([0, max_cpu + 10])
             ax.set_xlim([min(self._x_data), max(self._x_data)])
 
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
