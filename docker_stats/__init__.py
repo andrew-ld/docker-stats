@@ -122,10 +122,10 @@ class DockerStatsBot:
             ax.grid(True)
             ax.title.set_text(f"CPU{core + 1}")
 
-        axs[0][-1].legend(self._y_data.keys(), bbox_to_anchor=(1.04, 1), loc="upper left")
+        axs[0][-1].legend(self._y_data.keys(), bbox_to_anchor=(1.05, 1.05), loc="upper left")
 
         output = io.BytesIO()
-        plt.savefig(output, format="png")
+        plt.show()
         output.seek(0)
 
         self._bot.send_photo(self._channel, output)

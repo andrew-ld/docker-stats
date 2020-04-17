@@ -1,3 +1,4 @@
+import json
 import os
 
 from docker_stats import DockerStatsBot
@@ -14,7 +15,10 @@ if __name__ == '__main__':
         _bot.load_containers()
         _bot.graph_reset()
 
-        for _ in range(_ticks):
-            _bot.graph_loop_tick()
+        try:
+            for _ in range(_ticks):
+                _bot.graph_loop_tick()
+        except json.decoder.JSONDecodeError:
+            continue
 
         _bot.plot()
