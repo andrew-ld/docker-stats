@@ -96,7 +96,7 @@ class DockerStatsBot:
                 else:
                     ax.plot(self._x_data, [-sys.maxsize] * len(core_values), label=label)
 
-            ax.set_ylim([0, max_cpu + 10])
+            ax.set_ylim([-5, max_cpu + 10])
             ax.set_xlim([min(self._x_data), max(self._x_data)])
 
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
