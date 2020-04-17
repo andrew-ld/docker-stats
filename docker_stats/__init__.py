@@ -88,7 +88,7 @@ class DockerStatsBot:
 
             for label, values in self._y_data.items():
                 core_values = [v[core] for v in values]
-                max_cpu = max(max_cpu, max(core_values))
+                max_cpu = max(max_cpu, *core_values)
 
                 if sum(core_values) / len(core_values) >= 0.1:
                     ax.plot(self._x_data, core_values, label=label)
