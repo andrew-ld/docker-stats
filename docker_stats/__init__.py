@@ -12,10 +12,12 @@ from matplotlib import ticker as mtick
 from matplotlib import dates as mdates
 
 
-def _calculate_cpu_percent(d: dict) -> list:
+def _calculate_cpu_percent(d: dict) -> typing.List[float]:
     cpu_deltas = []
+
     cpu_usage_list = d["cpu_stats"]["cpu_usage"]["percpu_usage"]
     percpu_usage_list = d["precpu_stats"]["cpu_usage"]["percpu_usage"]
+
     for cpu_usage, precpu_usage in zip(cpu_usage_list, percpu_usage_list):
         cpu_delta = float(cpu_usage) - float(precpu_usage)
 
@@ -31,7 +33,7 @@ class DockerStatsBot:
     _bot: telegram.Bot
     _channel: int
     _x_data: typing.List[datetime.datetime]
-    _y_data: typing.Dict[str, typing.List[float]]
+    _y_data: typing.Dict[str, typing.List[typing.List[float]]]
     _docker: docker.APIClient
     _containers: typing.Dict[str, typing.Any]
     _thread_pool: multiprocessing.pool.ThreadPool
@@ -69,7 +71,7 @@ class DockerStatsBot:
     def plot(self):
         fig = plt.figure()
         fig.set_size_inches(11, 7)
-        axs = fig.subplots(2, 3) #, adjustable="box"
+        axs = fig.subplots(2, 3)
         lines = []
         
         ax = axs[0, 0]
