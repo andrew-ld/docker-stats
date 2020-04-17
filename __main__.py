@@ -5,9 +5,9 @@ from docker_stats import DockerStatsBot
 
 
 if __name__ == '__main__':
-    _token = os.environ["VL_TOKEN"]
-    _channel = int(os.environ["VL_CHANNEL"])
-    _ticks = int(os.environ["VL_TICKS"])
+    _token = os.environ["DS_TOKEN"]
+    _channel = int(os.environ["DS_CHANNEL"])
+    _ticks = int(os.environ["DS_TICKS"])
 
     _bot = DockerStatsBot(_token, _channel)
 
