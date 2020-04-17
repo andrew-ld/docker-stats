@@ -1,6 +1,6 @@
 import functools
 import io
-
+import itertools
 import docker
 import telegram
 import typing
@@ -10,13 +10,15 @@ import multiprocessing.pool
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mtick
 from matplotlib import dates as mdates
+from matplotlib.figure import Figure
 
 
 def _calculate_cpu_percent(d: dict) -> typing.List[float]:
     cpu_deltas = []
 
-    cpu_usage_list = d["cpu_stats"]["cpu_usage"]["percpu_usage"]
-    percpu_usage_list = d["precpu_stats"]["cpu_usage"]["percpu_usage"]
+    cores = d["cpu_stats"]["online_cpus"]
+    cpu_usage_list = d["cpu_stats"]["cpu_usage"]["percpu_usage"][:cores]
+    percpu_usage_list = d["precpu_stats"]["cpu_usage"]["percpu_usage"][:cores]
 
     for cpu_usage, precpu_usage in zip(cpu_usage_list, percpu_usage_list):
         cpu_delta = float(cpu_usage) - float(precpu_usage)
@@ -25,7 +27,7 @@ def _calculate_cpu_percent(d: dict) -> typing.List[float]:
             cpu_delta /= 10000000.0
         
         cpu_deltas.append(cpu_delta)
-    
+
     return cpu_deltas
 
 
@@ -69,44 +71,36 @@ class DockerStatsBot:
             self._y_data[c_name].append(_calculate_cpu_percent(stats))
 
     def plot(self):
-        fig = plt.figure()
-        fig.set_size_inches(11, 7)
-        axs = fig.subplots(2, 3)
-        lines = []
-        
-        ax = axs[0, 0]
+        fig: Figure = plt.figure()
+        fig.set_size_inches(19, 12)
+        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.80, left=0.05, bottom=0.05)
 
-        for label, values in self._y_data.items():
-            tmp_val = []
-            for value in values:
-                tmp_val.append(value[0])
-            p, = ax.plot(self._x_data, tmp_val, label=label)
-            lines.append(p)
+        cores = multiprocessing.cpu_count()
 
-        ax.get_yaxis().set_major_formatter(mtick.PercentFormatter(decimals=0))
-        fig.legend(lines, [l.get_label() for l in lines], loc="upper right") # , bbox_to_anchor=(1.04, 1)
-        plt.gcf().axes[0].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        lines = cores // 3
+        rows = cores // lines
 
-        ax.grid(True)
-        plt.xticks(rotation=45)
+        axs = fig.subplots(rows, lines)
 
-        ax.set_ylim([-2, 102])
-        ax.set_xlim([min(self._x_data), max(self._x_data)])
+        for core, ax in enumerate(itertools.chain.from_iterable(axs)):
+            for label, values in self._y_data.items():
+                core_values = [v[core] for v in values]
+                ax.plot(self._x_data, core_values, label=label)
 
-        plt.subplots_adjust(left=0)
-        fig.autofmt_xdate()
-        plt.tight_layout()
+            ax.set_ylim([-5, 105])
+            ax.set_xlim([min(self._x_data), max(self._x_data)])
+            ax.grid(True)
 
-        plt.ioff()
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+            ax.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
+
+        axs[0][-1].legend(self._y_data.keys(), bbox_to_anchor=(1.04, 1), loc="upper left")
+
         output = io.BytesIO()
-        fig.savefig(output, format="png")
+        plt.savefig(output, format="png")
         output.seek(0)
 
         self._bot.send_photo(self._channel, output)
-
-        output.close()
-        plt.close(fig)
-        plt.close("all")
 
 
 __all__ = [
