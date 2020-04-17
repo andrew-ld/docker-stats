@@ -11,8 +11,10 @@ if __name__ == '__main__':
     _bot = DockerStatsBot(_token, _channel)
 
     while True:
+        _bot.load_containers()
+        _bot.graph_reset()
+
         for _ in range(_ticks):
             _bot.graph_loop_tick()
 
         _bot.plot()
-        _bot.graph_reset()

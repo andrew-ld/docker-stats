@@ -5,12 +5,17 @@ import docker
 import telegram
 import typing
 import datetime
+import time
 import multiprocessing.pool
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mtick
 from matplotlib import dates as mdates
 from matplotlib.figure import Figure
+
+
+klabel = "plot.label"
+kcolor = "plot.color"
 
 
 def _calculate_cpu_percent(d: dict) -> typing.List[float]:
@@ -36,36 +41,54 @@ class DockerStatsBot:
     _channel: int
     _x_data: typing.List[datetime.datetime]
     _y_data: typing.Dict[str, typing.List[typing.List[float]]]
-    _docker: docker.APIClient
-    _containers: typing.Dict[str, typing.Any]
-    _thread_pool: multiprocessing.pool.ThreadPool
+    _docker: docker.APIClient()
+    _containers: typing.Dict[str, typing.Tuple[str, str]]
+    _thread_pool: multiprocessing.pool.ThreadPool = None
 
     def __init__(self, token: str, channel: int):
         self._channel = channel
 
         self._bot = telegram.Bot(token=token)
         self._docker = docker.APIClient()
-
         self._containers = {}
 
-        for container in self._docker.containers():
-            if container["State"] == "running":
-                name = container["Names"][0]
-                self._containers[name] = container["Id"]
+    def load_containers(self):
+        while True:
+            for c in self._docker.containers():
+                if c["State"] == "running":
+                    info = self._docker.inspect_container(c["Id"])
+                    labels = info["Config"]["Labels"]
+
+                    try:
+
+                        label = labels[klabel]
+                        color = labels[kcolor]
+
+                        self._containers[label] = (color, c["Id"])
+
+                    except KeyError:
+                        pass
+
+            if self._containers:
+                break
+
+            time.sleep(1)
+
+        if self._thread_pool is not None:
+            self._thread_pool.close()
 
         self._thread_pool = multiprocessing.pool.ThreadPool(len(self._containers))
 
-        self.graph_reset()
-
     def graph_reset(self):
         self._x_data = []
+        self._containers = {}
         self._y_data = dict((n, []) for n in self._containers.keys())
 
     def graph_loop_tick(self):
         self._x_data.append(datetime.datetime.now())
 
         f = functools.partial(self._docker.stats, stream=False)
-        results = self._thread_pool.map(f, self._containers.values())
+        results = self._thread_pool.map(f, [x[1] for x in self._containers.values()])
 
         for c_name, stats in zip(self._containers.keys(), results):
             self._y_data[c_name].append(_calculate_cpu_percent(stats))
@@ -88,7 +111,7 @@ class DockerStatsBot:
             for label, values in self._y_data.items():
                 core_values = [v[core] for v in values]
                 max_cpu = max(max_cpu, *core_values)
-                ax.plot(self._x_data, core_values, label=label)
+                ax.plot(self._x_data, core_values, self._containers[label][0], label=label)
 
             ax.set_ylim([0, max_cpu + 2])
             ax.set_xlim([min(self._x_data), max(self._x_data)])
