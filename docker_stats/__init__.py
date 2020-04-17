@@ -6,6 +6,7 @@ import telegram
 import typing
 import datetime
 import multiprocessing.pool
+import sys
 
 import matplotlib.pyplot as plt
 from matplotlib import ticker as mtick
@@ -90,7 +91,7 @@ class DockerStatsBot:
                     ax.plot(self._x_data, core_values, label=label)
 
                 else:
-                    ax.plot(self._x_data, core_values, label=label, alpha=0)
+                    ax.plot(self._x_data, [-sys.maxsize] * len(core_values), label=label)
 
             ax.set_ylim([-5, 105])
             ax.set_xlim([min(self._x_data), max(self._x_data)])
