@@ -85,14 +85,21 @@ class DockerStatsBot:
         for core, ax in enumerate(itertools.chain.from_iterable(axs)):
             for label, values in self._y_data.items():
                 core_values = [v[core] for v in values]
-                ax.plot(self._x_data, core_values, label=label)
+
+                if sum(core_values) / len(core_values) >= 0.1:
+                    ax.plot(self._x_data, core_values, label=label)
+
+                else:
+                    ax.plot(self._x_data, core_values, label=label, alpha=0)
 
             ax.set_ylim([-5, 105])
             ax.set_xlim([min(self._x_data), max(self._x_data)])
-            ax.grid(True)
 
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
             ax.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
+
+            ax.grid(True)
+            ax.title.set_text(f"CPU{core + 1}")
 
         axs[0][-1].legend(self._y_data.keys(), bbox_to_anchor=(1.04, 1), loc="upper left")
 
@@ -101,6 +108,9 @@ class DockerStatsBot:
         output.seek(0)
 
         self._bot.send_photo(self._channel, output)
+
+        plt.close(fig)
+        output.close()
 
 
 __all__ = [
