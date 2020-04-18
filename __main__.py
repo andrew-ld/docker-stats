@@ -12,8 +12,8 @@ if __name__ == '__main__':
     _bot = DockerStatsBot(_token, _channel)
 
     while True:
-        _bot.fetch_containers()
         _bot.cleanup()
+        _bot.fetch_containers()
 
         try:
             for _ in range(_ticks):

@@ -60,8 +60,11 @@ class DockerStatsBot:
     def cleanup(self):
         self._x_data.clear()
 
-        for c in self._containers:
-            c.cleanup()
+        if self._containers is not None:
+            self._containers.clear()
+
+        if self._thread_pool is not None:
+            self._thread_pool.close()
 
     def plot(self):
         fig: Figure = plt.figure()
