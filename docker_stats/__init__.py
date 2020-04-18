@@ -1,11 +1,12 @@
 import functools
 import io
 import itertools
+import time
+
 import docker
 import telegram
 import typing
 import datetime
-import time
 import multiprocessing.pool
 
 import matplotlib.pyplot as plt
@@ -13,107 +14,84 @@ from matplotlib import ticker as mtick
 from matplotlib import dates as mdates
 from matplotlib.figure import Figure
 
-
-klabel = "plot.label"
-kcolor = "plot.color"
-
-
-def _calculate_cpu_percent(d: dict) -> typing.List[float]:
-    cpu_deltas = []
-
-    cores = d["cpu_stats"]["online_cpus"]
-    cpu_usage_list = d["cpu_stats"]["cpu_usage"]["percpu_usage"][:cores]
-    percpu_usage_list = d["precpu_stats"]["cpu_usage"]["percpu_usage"][:cores]
-
-    for cpu_usage, precpu_usage in zip(cpu_usage_list, percpu_usage_list):
-        cpu_delta = float(cpu_usage) - float(precpu_usage)
-
-        if cpu_delta > 0.0:
-            cpu_delta /= 10000000.0
-        
-        cpu_deltas.append(cpu_delta)
-
-    return cpu_deltas
+from docker_stats.container_stats import ContainerStats
+from docker_stats.tools import calculate_cpu_percent, calculate_memory_usage, containers_factory
 
 
 class DockerStatsBot:
     _bot: telegram.Bot
     _channel: int
+
     _x_data: typing.List[datetime.datetime]
-    _y_data: typing.Dict[str, typing.List[typing.List[float]]]
-    _docker: docker.APIClient()
-    _containers: typing.Dict[str, typing.Tuple[str, str]]
+
+    _docker: docker.APIClient
     _thread_pool: multiprocessing.pool.ThreadPool = None
+    _containers: typing.List[ContainerStats] = None
 
     def __init__(self, token: str, channel: int):
         self._channel = channel
+        self._x_data = []
 
         self._bot = telegram.Bot(token=token)
         self._docker = docker.APIClient()
 
-    def load_containers(self):
-        self._containers = {}
+    def fetch_containers(self):
+        while not self._containers:
+            self._containers = containers_factory(self._docker)
 
-        while True:
-            for c in self._docker.containers():
-                if c["State"] == "running":
-                    info = self._docker.inspect_container(c["Id"])
-                    labels = info["Config"]["Labels"]
-
-                    try:
-
-                        label = labels[klabel]
-                        color = labels[kcolor]
-
-                        self._containers[label] = (color, c["Id"])
-
-                    except KeyError:
-                        pass
-
-            if self._containers:
-                break
-
-            time.sleep(1)
+            if not self._containers:
+                time.sleep(1)
 
         if self._thread_pool is not None:
             self._thread_pool.close()
 
         self._thread_pool = multiprocessing.pool.ThreadPool(len(self._containers))
 
-    def graph_reset(self):
-        self._x_data = []
-        self._y_data = dict((n, []) for n in self._containers.keys())
-
     def graph_loop_tick(self):
         self._x_data.append(datetime.datetime.now())
 
         f = functools.partial(self._docker.stats, stream=False)
-        results = self._thread_pool.map(f, [x[1] for x in self._containers.values()])
+        results = self._thread_pool.map(f, [c.uid for c in self._containers])
 
-        for c_name, stats in zip(self._containers.keys(), results):
-            self._y_data[c_name].append(_calculate_cpu_percent(stats))
+        for container, stats in zip(self._containers, results):
+            container.add_cpu_stats(calculate_cpu_percent(stats))
+            container.add_memory_stats(calculate_memory_usage(stats))
+
+    def cleanup(self):
+        self._x_data.clear()
+
+        for c in self._containers:
+            c.cleanup()
 
     def plot(self):
         fig: Figure = plt.figure()
         fig.set_size_inches(19, 12)
-        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.90, left=0.05, bottom=0.05)
+        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.95, left=0.05, bottom=0.05)
 
         cores = multiprocessing.cpu_count()
+        axs = fig.subplots(cores // 2, 2)
 
-        lines = cores // 3
-        rows = cores // lines
+        ax_memory = axs[0][0]
+        axs_cpu = axs[1:]
+        axs[0][-1].axis("off")
 
-        axs = fig.subplots(rows, lines)
+        for c in self._containers:
+            ax_memory.plot(self._x_data, c.get_memory_stats(), c.color, label=c.name)
 
-        for core, ax in enumerate(itertools.chain.from_iterable(axs)):
+        ax_memory.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        ax_memory.grid(True)
+        ax_memory.title.set_text("MEMORY")
+        ax_memory.legend(bbox_to_anchor=(1.14, 1.07), loc="upper left", shadow=True,  prop={"size": 20})
+
+        for core, ax in enumerate(itertools.chain.from_iterable(axs_cpu)):
             max_cpu = 0
 
-            for label, values in self._y_data.items():
-                core_values = [v[core] for v in values]
-                max_cpu = max(max_cpu, *core_values)
-                ax.plot(self._x_data, core_values, self._containers[label][0], label=label)
+            for c in self._containers:
+                cpu_stats = c.get_cpu_stats(core)
+                max_cpu = max(max_cpu, *cpu_stats)
+                ax.plot(self._x_data, cpu_stats, c.color, label=c.name)
 
-            ax.set_ylim([0, max_cpu + 2])
+            ax.set_ylim([0, max_cpu + 3])
             ax.set_xlim([min(self._x_data), max(self._x_data)])
 
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
@@ -121,8 +99,6 @@ class DockerStatsBot:
 
             ax.grid(True)
             ax.title.set_text(f"CPU{core + 1}")
-
-        axs[0][-1].legend(self._y_data.keys(), bbox_to_anchor=(1.05, 1.05), loc="upper left")
 
         output = io.BytesIO()
         plt.savefig(output, format="png")
