@@ -2,7 +2,6 @@ import functools
 import io
 import itertools
 import time
-
 import docker
 import telegram
 import typing
@@ -72,7 +71,7 @@ class DockerStatsBot:
         fig.subplots_adjust(hspace=0.25, top=0.95, right=0.95, left=0.05, bottom=0.05)
 
         cores = multiprocessing.cpu_count()
-        axs = fig.subplots(cores // 2, 2)
+        axs = fig.subplots(cores // 2 + 1, 2)
 
         ax_memory = axs[0][0]
         axs_cpu = axs[1:]
