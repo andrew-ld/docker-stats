@@ -83,7 +83,7 @@ class DockerStatsBot:
 
         ax_memory.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax_memory.grid(True)
-        ax_memory.title.set_text("MEMORY")
+        ax_memory.title.set_text("MEMORY (MB)")
         ax_memory.legend(bbox_to_anchor=(1.14, 1.07), loc="upper left", shadow=True,  prop={"size": 20})
 
         for core, ax in enumerate(itertools.chain.from_iterable(axs_cpu)):
@@ -101,7 +101,7 @@ class DockerStatsBot:
             ax.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
 
             ax.grid(True)
-            ax.title.set_text(f"CPU{core + 1}")
+            ax.title.set_text(f"CPU {core + 1}")
 
         output = io.BytesIO()
         plt.savefig(output, format="png")
