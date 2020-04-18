@@ -33,7 +33,6 @@ class DockerStatsBot:
 
         self._bot = telegram.Bot(token=token)
         self._docker = docker.APIClient()
-        time.tzset()
 
     def fetch_containers(self):
         while not self._containers:
