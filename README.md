@@ -2,7 +2,7 @@
 
 ## Build
 ```bash
-git clone https://github.com/davtur19/docker-stats
+git clone https://github.com/andrew-ld/docker-stats
 cd docker-stats
 docker image build -t dockerstats:latest .
 ```
