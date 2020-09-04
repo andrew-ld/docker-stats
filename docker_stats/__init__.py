@@ -80,6 +80,7 @@ class DockerStatsBot:
         for c in self._containers:
             ax_memory.plot(self._x_data, c.get_memory_stats(), c.color, label=c.name)
 
+        ax_memory.set_xlim([min(self._x_data), max(self._x_data)])
         ax_memory.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax_memory.grid(True)
         ax_memory.title.set_text("MEMORY (MB)")
