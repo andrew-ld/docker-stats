@@ -6,6 +6,8 @@ COPY ./requirements.txt .
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+RUN pip3 install numpy --upgrade
+
 COPY __main__.py .
 
 COPY ./docker_stats /srv/docker_stats/docker_stats
