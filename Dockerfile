@@ -1,12 +1,10 @@
-FROM python:3
+FROM python:3.10
 
 WORKDIR /srv/docker_stats
 
 COPY ./requirements.txt .
 
 RUN pip3 install --no-cache-dir -r requirements.txt
-
-RUN pip3 install numpy --upgrade
 
 COPY __main__.py .
 

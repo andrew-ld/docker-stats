@@ -28,19 +28,11 @@ def calculate_memory_usage(d: dict) -> int:
     return d["memory_stats"]["usage"] / 1000000
 
 
-def calculate_cpu_percent(d: dict) -> typing.List[float]:
+def calculate_cpu_percent(d: dict) -> float:
     cpu_deltas = []
 
-    cores = d["cpu_stats"]["online_cpus"]
-    cpu_usage_list = d["cpu_stats"]["cpu_usage"]["percpu_usage"][:cores]
-    percpu_usage_list = d["precpu_stats"]["cpu_usage"]["percpu_usage"][:cores]
+    cpu_delta = d["cpu_stats"]["cpu_usage"]["total_usage"] - d["precpu_stats"]["cpu_usage"]["total_usage"]
+    system_delta = d["cpu_stats"]["system_cpu_usage"] - d["precpu_stats"]["system_cpu_usage"]
+    result_cpu_usage = cpu_delta / system_delta * d["cpu_stats"]["online_cpus"] * 100
 
-    for cpu_usage, precpu_usage in zip(cpu_usage_list, percpu_usage_list):
-        cpu_delta = float(cpu_usage) - float(precpu_usage)
-
-        if cpu_delta > 0.0:
-            cpu_delta /= 10000000.0
-
-        cpu_deltas.append(cpu_delta)
-
-    return cpu_deltas
+    return result_cpu_usage

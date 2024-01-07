@@ -2,7 +2,7 @@ import typing
 
 
 class ContainerStats:
-    _cpu_stats: typing.List[typing.List[float]]
+    _cpu_stats: typing.List[float]
     _memory_stats: typing.List[float]
     _name: str
     _uid: str
@@ -18,10 +18,10 @@ class ContainerStats:
     def get_memory_stats(self) -> typing.List[float]:
         return self._memory_stats
 
-    def get_cpu_stats(self, core: int) -> typing.List[float]:
-        return [stats[core] for stats in self._cpu_stats]
+    def get_cpu_stats(self) -> typing.List[float]:
+        return [stats for stats in self._cpu_stats]
 
-    def add_cpu_stats(self, stats: typing.List[float]):
+    def add_cpu_stats(self, stats: float):
         self._cpu_stats.append(stats)
 
     def add_memory_stats(self, usage: int):

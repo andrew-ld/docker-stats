@@ -68,14 +68,12 @@ class DockerStatsBot:
     def plot(self):
         fig: Figure = plt.figure()
         fig.set_size_inches(19, 12)
-        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.95, left=0.05, bottom=0.05)
+        fig.subplots_adjust(hspace=0.25, top=0.95, right=0.85, left=0.05, bottom=0.05)
 
-        cores = multiprocessing.cpu_count()
-        axs = fig.subplots(cores // 2 + 1, 2)
+        axs = fig.subplots(2, 1)
 
-        ax_memory = axs[0][0]
-        axs_cpu = axs[1:]
-        axs[0][-1].axis("off")
+        ax_memory = axs[0]
+        axs_cpu = axs[1]
 
         for c in self._containers:
             ax_memory.plot(self._x_data, c.get_memory_stats(), c.color, label=c.name)
@@ -84,24 +82,21 @@ class DockerStatsBot:
         ax_memory.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax_memory.grid(True)
         ax_memory.title.set_text("MEMORY (MB)")
-        ax_memory.legend(bbox_to_anchor=(1.14, 1.07), loc="upper left", shadow=True,  prop={"size": 20})
+        ax_memory.legend(bbox_to_anchor=(1, 1), loc="upper left", shadow=True,  prop={"size": 20})
+        # bbox_to_anchor=(1.14, 1.07)
 
-        for core, ax in enumerate(itertools.chain.from_iterable(axs_cpu)):
-            max_cpu = 0
+        for c in self._containers:
+            cpu_stats = c.get_cpu_stats()
+            axs_cpu.plot(self._x_data, cpu_stats, c.color, label=c.name)
 
-            for c in self._containers:
-                cpu_stats = c.get_cpu_stats(core)
-                max_cpu = max(max_cpu, *cpu_stats)
-                ax.plot(self._x_data, cpu_stats, c.color, label=c.name)
+        axs_cpu.set_ylim([0, 100])
+        axs_cpu.set_xlim([min(self._x_data), max(self._x_data)])
 
-            ax.set_ylim([0, max_cpu + 3])
-            ax.set_xlim([min(self._x_data), max(self._x_data)])
+        axs_cpu.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+        axs_cpu.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
 
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-            ax.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
-
-            ax.grid(True)
-            ax.title.set_text(f"CPU {core + 1}")
+        axs_cpu.grid(True)
+        axs_cpu.title.set_text(f"CPU")
 
         output = io.BytesIO()
         plt.savefig(output, format="png")
